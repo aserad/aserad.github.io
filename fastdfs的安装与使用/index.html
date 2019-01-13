@@ -1,0 +1,95 @@
+<!DOCTYPE html><html><head><meta name="generator" content="Hexo 3.8.0"><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>FastDFS的安装与使用 | Aserad's Blog</title><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/font.css"><link rel="stylesheet" type="text/css" href="/css/noise.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"></head><body><article class="wrapper"><div class="post-main"><div class="nav"><nav class="container"><a class="sidebar-nav-item active" href="/">Home</a><a class="sidebar-nav-item" href="/archives">Archives</a></nav><div class="container post-meta"><div class="post-tags"><a class="post-tag-link" href="/tags/fastdfs-nginx/">fastdfs nginx</a></div><div class="post-time">2019-01-13</div></div></div><div class="container post-header"><h1>FastDFS的安装与使用</h1></div><div class="container post-toc"><details class="toc"><summary class="toc-accordion">Table of Contents</summary><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#FastDFS的介绍"><span class="toc-number">1.</span> <span class="toc-text">FastDFS的介绍</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#FastDFS的安装与配置（CentOS-7-64位系统）"><span class="toc-number">2.</span> <span class="toc-text">FastDFS的安装与配置（CentOS 7 64位系统）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Nginx配合FastDFS的使用（需要安装Nginx和对应的模块-fastdfs-nginx-module）"><span class="toc-number">3.</span> <span class="toc-text">Nginx配合FastDFS的使用（需要安装Nginx和对应的模块 fastdfs-nginx-module）</span></a></li></ol></details></div><div class="container post-content"><h2 id="FastDFS的介绍"><a href="#FastDFS的介绍" class="headerlink" title="FastDFS的介绍"></a>FastDFS的介绍</h2><p>FastDFS只有两个角色：Tracker server和Storage server。Tracker server作为中心结点，其主要作用是负载均衡和调度。Tracker server在内存中记录分组和Storage server的状态等信息，不记录文件索引信息，占用的内存量很少。另外，客户端（应用）和Storage server访问Tracker server时，Tracker server扫描内存中的分组和Storage server信息，然后给出应答。</p>
+<p>Storage server直接利用OS的文件系统存储文件。FastDFS不会对文件进行分块存储，客户端上传的文件和Storage server上的文件一一对应。</p>
+<p>在FastDFS中，客户端上传文件时，文件ID不是由客户端指定，而是由Storage server生成后返回给客户端的。文件ID中包含了组名、文件相对路径和文件名，Storage server可以根据文件ID直接定位到文件。</p>
+<h2 id="FastDFS的安装与配置（CentOS-7-64位系统）"><a href="#FastDFS的安装与配置（CentOS-7-64位系统）" class="headerlink" title="FastDFS的安装与配置（CentOS 7 64位系统）"></a>FastDFS的安装与配置（CentOS 7 64位系统）</h2><ul>
+<li><p>安装依赖包</p>
+<ul>
+<li>执行 <code>git clone https://github.com/happyfish100/libfastcommon.git</code> 命令将依赖包下载到本地，若执行该命令出现bash: git: command not found…错误说明系统上没有安装git,需先安装git，安装命令为<code>yum install git</code>，安装完成再下载</li>
+<li><p>下载完后cd到libfastcommon目录， 分别执行<code>./make.sh</code>和<code>./make.sh install</code>这两个命令，如果执行第一个命令出现如下错误</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">./make.sh: line 14: gcc: command not found</span><br><span class="line">./make.sh: line 15: ./a.out: No such file or directory</span><br><span class="line">cc -Wall -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -g -O3 -c -o hash.o hash.c</span><br><span class="line">make: cc: Command not found</span><br><span class="line">make: *** [hash.o] Error 127</span><br></pre></td></tr></table></figure>
+<p>需要先安装gcc编译器，安装命令为 <code>yum install -y gcc</code> </p>
+</li>
+</ul>
+</li>
+<li><p>安装 FastDFS</p>
+<ul>
+<li>执行<code>git clone https://github.com/happyfish100/fastdfs.git</code>命令下载FastDFS的安装包</li>
+<li>下载完成后cd到fastdfs目录， 分别执行<code>./make.sh</code>和<code>./make.sh install</code>命令</li>
+</ul>
+</li>
+<li><p>配置跟踪服务器 tracker</p>
+<ul>
+<li>执行 <code>cp /etc/fdfs/tracker.conf.sample /etc/fdfs/tracker.conf</code>命令拷贝一份配置文件</li>
+<li>在/root/Documents目录中创建目录 fastdfs/tracker 来存储数据和日志等信息, 创建命令为 <code>mkdir -p /root/Documents/fastdfs/tracker</code></li>
+<li>编辑 /etc/fdfs/tracker.conf 配置文件， 修改其中的 base_path=/root/Documents/fastdfs/tracker</li>
+</ul>
+</li>
+<li><p>配置存储服务器 storage</p>
+<ul>
+<li>执行 <code>cp /etc/fdfs/storage.conf.sample /etc/fdfs/storage.conf</code>命令拷贝一份配置文件</li>
+<li>在/root/Documents目录中创建目录 fastdfs/storage 来存储数据和日志等信息, 创建命令为 <code>mkdir -p /root/Documents/fastdfs/storage</code></li>
+<li><p>编辑 /etc/fdfs/storage.conf 配置文件， 修改以下内容</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">base_path=/root/Documents/fastdfs/storage</span><br><span class="line">store_path0=/root/Documents/fastdfs/storage</span><br><span class="line">tracker_server=本机的ip:22122</span><br></pre></td></tr></table></figure>
+<p>其中base_path是存储服务器的数据和日志的存储路径，store_path0是上传的文件的存储路径，tracker_server是跟踪服务器的地址</p>
+</li>
+</ul>
+</li>
+<li><p>启动 tracker 和 storage</p>
+<ul>
+<li><code>service fdfs_trackerd start</code></li>
+<li><code>service fdfs_storaged start</code></li>
+</ul>
+</li>
+<li><p>测试是否安装成功</p>
+<ul>
+<li><p>配置客户端的配置文件</p>
+<ul>
+<li>执行 <code>cp /etc/fdfs/client.conf.sample /etc/fdfs/client.conf</code>命令拷贝一份配置文件</li>
+<li>编辑 /etc/fdfs/client.conf 文件，修改以下内容<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">base_path=/root/Documents/fastdfs/tracker</span><br><span class="line">tracker_server==本机的ip:22122</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>上传文件测试，执行命令 <code>fdfs_upload_file /etc/fdfs/client.conf 要上传的图片的路径</code>，如果返回类似 group1/M00/00/00/wKgAaFw7LvaAe0WSAABC_zNYbBE813.jpg 的文件id则说明文件上传成功</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="Nginx配合FastDFS的使用（需要安装Nginx和对应的模块-fastdfs-nginx-module）"><a href="#Nginx配合FastDFS的使用（需要安装Nginx和对应的模块-fastdfs-nginx-module）" class="headerlink" title="Nginx配合FastDFS的使用（需要安装Nginx和对应的模块 fastdfs-nginx-module）"></a>Nginx配合FastDFS的使用（需要安装Nginx和对应的模块 fastdfs-nginx-module）</h2><ul>
+<li>首先下载需要的模块，使用命令 <code>git clone https://github.com/happyfish100/fastdfs-nginx-module</code>下载，注意，在哪个目录下执行该命令文件夹就会下载到哪个目录，这里下载到/root目录下了</li>
+<li><p>Nignx的下载与安装</p>
+<ul>
+<li>去<a href="http://nginx.org/en/download.html" target="_blank" rel="noopener">Nginx官网</a>下载压缩包，这里下载的是<code>nginx-1.15.8.tar.gz</code></li>
+<li><p>安装依赖包</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">yum install -y pcre pcre-devel</span><br><span class="line">yum install -y zlib zlib-devel</span><br><span class="line">yum install -y openssl openssl-devel</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用命令 <code>tar -zxvf nginx-1.15.8.tar.gz -C /usr/local/</code> 将压缩包解压到/user/local目录下</p>
+</li>
+<li>进行configure配置，首先进入解压后的文件夹，再执行命令 <code>./configure --prefix=/usr/local/nginx --add-module=fastdfs-nginx-module目录的绝对路径/src</code>，</li>
+<li>分别执行<code>make</code>和<code>make install</code>命令</li>
+</ul>
+</li>
+<li><p>配置 fastdfs-nginx-module 模块</p>
+<ul>
+<li>把 fastdfs-nginx-module文件夹下的src下的 mod_fastdfs.conf 文件拷贝到 /etc/fdfs/mod_fastdfs.conf<br>因为我的fastdfs-nginx-module文件夹在root目录下，所以我执行的命令为<code>cp /root/fastdfs-nginx-module/src/mod_fastdfs.conf /etc/fdfs/mod_fastdfs.conf</code></li>
+<li>修改 /etc/fdfs/mod_fastdfs.conf 文件， 要修改的内容如下<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">connect_timeout=10</span><br><span class="line">tracker_server=本机的ip:22122</span><br><span class="line">url_have_group_name=true</span><br><span class="line">store_path0=/root/Documents/fastdfs/storage  # 该目录可以自定义</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>配置FastDFS</p>
+<ul>
+<li>拷贝fastdfs目录中的conf目录下的http.conf文件和mime.types文件<br><code>cp /root/fastdfs/conf/http.conf /etc/fdfs/http.conf</code><br><code>cp /root/fastdfs/conf/mime.types /etc/fdfs/mime.types</code></li>
+</ul>
+</li>
+<li><p>修改Nginx配置文件，编辑 /usr/local/nginx/conf/nginx.conf 文件，加入以下内容</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">server &#123;</span><br><span class="line">	listen       8888;</span><br><span class="line">	server_name  localhost;</span><br><span class="line">    location ~/group[0-9]/ &#123;</span><br><span class="line">        ngx_fastdfs_module;</span><br><span class="line">    &#125;</span><br><span class="line">    error_page   500 502 503 504  /50x.html;</span><br><span class="line">    location = /50x.html &#123;</span><br><span class="line">        root   html;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动Nginx服务， 进入nginx安装的目录，这里是/usr/local/nginx，然后执行<code>cd sbin</code>进入sbin目录，可以看到有一个nginx执行文件，执行<code>./nginx</code>命令就可以启动<br>如果nginx服务已经启动，可以通过<code>./nginx -s stop</code>命令来停止服务，使用<code>ps -ef | grep nginx</code>可以查看nginx服务是否已经启动</p>
+</li>
+</ul>
+<ul>
+<li>在进行上述步骤后，访问localhost:8888/group1/M00/00/00/wKgAaFw7LvaAe0WSAABC_zNYbBE813.jpg类似的网址，页面会展示上传的图片，如果报404错误，可以修改/usr/local/nginx/conf/nginx.conf 文件， 加上<code>user root</code>，参考博客<a href="https://blog.csdn.net/mfanoffice2012/article/details/84976470" target="_blank" rel="noopener">https://blog.csdn.net/mfanoffice2012/article/details/84976470</a></li>
+</ul>
+</div></div><div class="post-main post-comment"></div></article><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+  $(".fancybox").fancybox();
+});
+</script></body></html>
