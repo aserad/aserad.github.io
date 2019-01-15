@@ -1,7 +1,9 @@
 ---
 title: FastDFS的安装与使用
 category: FastDFS
-tag: fastdfs nginx
+tag:
+    - fastdfs
+    - nginx
 ---
 
 ## FastDFS的介绍
