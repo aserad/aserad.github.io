@@ -63,7 +63,7 @@ def get_response(addr_file):
     接口返回数据实例（2019/2/28)：
         '{"status":"1","count":"1","info":"OK","infocode":"10000","suggestion":{"keywords":[],"cities":[]},"pois":[{"id":"B0FFG1NA8U","parent":[],"name":"合肥顶峰数码科技有限公司","type":"公司企业;公司;公司","typecode":"170200","biz_type":[],"address":"北一环路168号新天地国际购物中心7层","location":"117.279240,31.879880","tel":[],"distance":[],"biz_ext":{"rating":[],"cost":[]},"pname":"安徽省","cityname":"合肥市","adname":"庐阳区","importance":[],"shopid":[],"shopinfo":"0","poiweight":[],"photos":[]}]}'
     :param addr_file: 包含地址的文本文件，一行只能有一个地址
-    :return: 包含经纬度和地址的json字符串，示例：'{"lnglat": [117.27924, 31.87988], "name": "合肥庐阳区新天地国际中心", "style": 0}'
+    :return: 返回一个生成器，迭代这个生成器会返回包含经纬度和地址的json字符串，示例：'{"lnglat": [117.27924, 31.87988], "name": "合肥庐阳区新天地国际中心", "style": 0}'
     """
     for addr in open(addr_file, 'r', encoding='utf8'):
         addr = addr.replace('\n', '')
