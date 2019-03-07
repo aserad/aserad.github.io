@@ -104,3 +104,11 @@ t[[1,2],:] = t[[2,1],:]  # 会改变原数组
 # 列交换
 t[:,[0,2]] = t[:,[2,0]]
 ```
+
+### numpy生成随机数
+```python
+import numpy as np
+
+np.random.randint(low=1,high=100,size=10,dtype=int)
+np.random.rand(9)
+```
